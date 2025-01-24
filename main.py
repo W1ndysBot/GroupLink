@@ -90,6 +90,7 @@ def save_group_link(category, group_links):
             os.path.join(DATA_DIR, f"group_link_data.json"), "w", encoding="utf-8"
         ) as f:
             json.dump({category: group_links}, f, ensure_ascii=False)
+            return True
     except Exception as e:
         logging.error(f"保存群互联失败: {e}")
         return False
@@ -111,7 +112,7 @@ async def add_group_link(websocket, group_id, message_id, raw_message, authorize
                     await send_group_msg(
                         websocket,
                         group_id,
-                        f"[CQ:reply,id={message_id}]❌❌❌本群已添加互联: {category},请勿重复添加",
+                        f"[CQ:reply,id={message_id}]❌❌❌本群已添加互联【{category}】,请勿重复添加",
                     )
                     return False
                 # 添加数组元素
@@ -121,7 +122,7 @@ async def add_group_link(websocket, group_id, message_id, raw_message, authorize
                     await send_group_msg(
                         websocket,
                         group_id,
-                        f"[CQ:reply,id={message_id}]✅✅✅已添加群互联: {category}",
+                        f"[CQ:reply,id={message_id}]✅✅✅已添加群互联【{category}】",
                     )
                     return True
                 else:
@@ -153,7 +154,7 @@ async def delete_group_link(websocket, group_id, message_id, raw_message, author
                     await send_group_msg(
                         websocket,
                         group_id,
-                        f"[CQ:reply,id={message_id}]❌❌❌本群未添加互联: {category}",
+                        f"[CQ:reply,id={message_id}]❌❌❌本群未添加互联【{category}】",
                     )
                     return False
 
@@ -163,7 +164,7 @@ async def delete_group_link(websocket, group_id, message_id, raw_message, author
                     await send_group_msg(
                         websocket,
                         group_id,
-                        f"[CQ:reply,id={message_id}]✅✅✅已删除群互联: {category}",
+                        f"[CQ:reply,id={message_id}]✅✅✅已删除群互联【{category}】",
                     )
                     return True
                 else:
