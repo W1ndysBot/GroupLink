@@ -5,6 +5,8 @@ import os
 import sys
 import re
 import json
+import asyncio
+from datetime import datetime
 
 # 添加项目根目录到sys.path
 sys.path.append(
@@ -75,6 +77,7 @@ def load_group_link(category):
             os.path.join(DATA_DIR, f"group_link_data.json"), "r", encoding="utf-8"
         ) as f:
             group_link_data = json.load(f)
+
             return group_link_data.get(category, [])
     except Exception as e:
         logging.error(f"加载群互联失败: {e}")
@@ -210,8 +213,23 @@ async def send_group_link_message(websocket, user_id, group_id, raw_message):
             for category in group_link_category:
                 group_links = load_group_link(category)
                 for link_group_id in group_links:
-                    message = f"【{group_id}】的【{user_id}】说：{raw_message}"
-                    await send_group_msg(websocket, link_group_id, message)
+                    # 必须不是自己
+                    if link_group_id != group_id:
+                        # 目标群是否开启群互联
+                        if load_function_status(link_group_id):
+                            if "CQ:json,data=" in raw_message:
+                                await send_group_msg(
+                                    websocket,
+                                    link_group_id,
+                                    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n群【{group_id}】的【{user_id}】发了下面JSON卡片",
+                                )
+                                await asyncio.sleep(0.5)
+                                await send_group_msg(
+                                    websocket, link_group_id, raw_message
+                                )
+                            else:
+                                message = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n群【{group_id}】的【{user_id}】说：\n\n{raw_message}"
+                                await send_group_msg(websocket, link_group_id, message)
 
     except Exception as e:
         logging.error(f"发送群互联消息失败: {e}")
