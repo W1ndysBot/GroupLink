@@ -113,7 +113,7 @@ async def add_group_link(websocket, group_id, message_id, raw_message, authorize
                         group_id,
                         f"[CQ:reply,id={message_id}]❌❌❌本群已添加互联: {category},请勿重复添加",
                     )
-                    return
+                    return False
                 # 添加数组元素
                 group_links.append(group_id)
                 # 保存群互联
@@ -123,15 +123,18 @@ async def add_group_link(websocket, group_id, message_id, raw_message, authorize
                         group_id,
                         f"[CQ:reply,id={message_id}]✅✅✅已添加群互联: {category}",
                     )
+                    return True
                 else:
                     await send_group_msg(
                         websocket,
                         group_id,
                         f"[CQ:reply,id={message_id}]❌❌❌添加群互联失败",
                     )
+                    return False
 
     except Exception as e:
         logging.error(f"添加群互联失败: {e}")
+        return False
 
 
 async def delete_group_link(websocket, group_id, message_id, raw_message, authorized):
@@ -152,7 +155,7 @@ async def delete_group_link(websocket, group_id, message_id, raw_message, author
                         group_id,
                         f"[CQ:reply,id={message_id}]❌❌❌本群未添加互联: {category}",
                     )
-                    return
+                    return False
 
                 # 删除群互联
                 group_links.remove(group_id)
@@ -162,14 +165,17 @@ async def delete_group_link(websocket, group_id, message_id, raw_message, author
                         group_id,
                         f"[CQ:reply,id={message_id}]✅✅✅已删除群互联: {category}",
                     )
+                    return True
                 else:
                     await send_group_msg(
                         websocket,
                         group_id,
                         f"[CQ:reply,id={message_id}]❌❌❌删除群互联失败",
                     )
+                    return False
     except Exception as e:
         logging.error(f"删除群互联失败: {e}")
+        return False
 
 
 # 群消息处理函数
@@ -191,7 +197,16 @@ async def handle_GroupLink_group_message(websocket, msg):
 
         # 检查是否开启
         if load_function_status(group_id):
-            pass
+
+            if await add_group_link(
+                websocket, group_id, message_id, raw_message, authorized
+            ):
+                return
+
+            if await delete_group_link(
+                websocket, group_id, message_id, raw_message, authorized
+            ):
+                return
 
     except Exception as e:
         logging.error(f"处理GroupLink群消息失败: {e}")
