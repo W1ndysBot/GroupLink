@@ -96,6 +96,26 @@ def save_group_link(category, group_links):
         return False
 
 
+def load_group_link_category(group_id):
+    """
+    加载群互联分类，以数组返回
+    """
+    try:
+        with open(
+            os.path.join(DATA_DIR, f"group_link_data.json"), "r", encoding="utf-8"
+        ) as f:
+            group_link_data = json.load(f)
+            group_link_category = []
+            for category in group_link_data:
+                if group_id in group_link_data[category]:
+                    group_link_category.append(category)
+            return group_link_category
+
+    except Exception as e:
+        logging.error(f"加载群互联分类失败: {e}")
+        return None
+
+
 async def add_group_link(websocket, group_id, message_id, raw_message, authorized):
     """
     添加群互联
@@ -179,6 +199,25 @@ async def delete_group_link(websocket, group_id, message_id, raw_message, author
         return False
 
 
+async def send_group_link_message(websocket, user_id, group_id, raw_message):
+    """
+    把某群的消息转发到互联群
+    """
+    try:
+        # 获取该群的互联群
+        group_link_category = load_group_link_category(group_id)
+        if group_link_category:
+            for category in group_link_category:
+                group_links = load_group_link(category)
+                for link_group_id in group_links:
+                    message = f"【{group_id}】的【{user_id}】说：{raw_message}"
+                    await send_group_msg(websocket, link_group_id, message)
+
+    except Exception as e:
+        logging.error(f"发送群互联消息失败: {e}")
+        return False
+
+
 # 群消息处理函数
 async def handle_GroupLink_group_message(websocket, msg):
     # 确保数据目录存在
@@ -209,6 +248,7 @@ async def handle_GroupLink_group_message(websocket, msg):
             ):
                 return
 
+            await send_group_link_message(websocket, user_id, group_id, raw_message)
     except Exception as e:
         logging.error(f"处理GroupLink群消息失败: {e}")
         await send_group_msg(
