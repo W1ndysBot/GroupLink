@@ -63,14 +63,72 @@ async def toggle_function_status(websocket, group_id, message_id, authorized):
         )
 
 
+def load_group_link(category):
+    """
+    加载群互联
+    """
+    try:
+        if not os.path.exists(os.path.join(DATA_DIR, f"group_link_data.json")):
+            return []
+
+        with open(
+            os.path.join(DATA_DIR, f"group_link_data.json"), "r", encoding="utf-8"
+        ) as f:
+            group_link_data = json.load(f)
+            return group_link_data.get(category, [])
+    except Exception as e:
+        logging.error(f"加载群互联失败: {e}")
+        return []
+
+
+def save_group_link(category, group_links):
+    """
+    保存群互联，保存某分类及其分类下的数组到JSON文件
+    """
+    try:
+        with open(
+            os.path.join(DATA_DIR, f"group_link_data.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump({category: group_links}, f, ensure_ascii=False)
+    except Exception as e:
+        logging.error(f"保存群互联失败: {e}")
+        return False
+
+
 async def add_group_link(websocket, group_id, message_id, raw_message, authorized):
     """
     添加群互联
     """
     try:
         if authorized:
-            match = re.match("互联(.*)", raw_message):
-                
+            match = re.match("add互联(.*)", raw_message)
+            if match:
+                category = match.group(1)
+                # 读取该分类下的数组
+                group_links = load_group_link(category)
+                # 检查群互联是否已存在
+                if group_id in group_links:
+                    await send_group_msg(
+                        websocket,
+                        group_id,
+                        f"[CQ:reply,id={message_id}]❌❌❌本群已添加互联: {category},请勿重复添加",
+                    )
+                    return
+                # 添加数组元素
+                group_links.append(group_id)
+                # 保存群互联
+                if save_group_link(category, group_links):
+                    await send_group_msg(
+                        websocket,
+                        group_id,
+                        f"[CQ:reply,id={message_id}]✅✅✅已添加群互联: {category}",
+                    )
+                else:
+                    await send_group_msg(
+                        websocket,
+                        group_id,
+                        f"[CQ:reply,id={message_id}]❌❌❌添加群互联失败",
+                    )
 
     except Exception as e:
         logging.error(f"添加群互联失败: {e}")
@@ -81,7 +139,35 @@ async def delete_group_link(websocket, group_id, message_id, raw_message, author
     删除群互联
     """
     try:
-        pass
+        if authorized:
+            match = re.match("rm互联(.*)", raw_message)
+            if match:
+                category = match.group(1)
+                group_links = load_group_link(category)
+
+                # 检查群互联是否存在
+                if group_id not in group_links:
+                    await send_group_msg(
+                        websocket,
+                        group_id,
+                        f"[CQ:reply,id={message_id}]❌❌❌本群未添加互联: {category}",
+                    )
+                    return
+
+                # 删除群互联
+                group_links.remove(group_id)
+                if save_group_link(category, group_links):
+                    await send_group_msg(
+                        websocket,
+                        group_id,
+                        f"[CQ:reply,id={message_id}]✅✅✅已删除群互联: {category}",
+                    )
+                else:
+                    await send_group_msg(
+                        websocket,
+                        group_id,
+                        f"[CQ:reply,id={message_id}]❌❌❌删除群互联失败",
+                    )
     except Exception as e:
         logging.error(f"删除群互联失败: {e}")
 
