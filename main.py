@@ -86,14 +86,26 @@ def load_group_link(category):
 
 def save_group_link(category, group_links):
     """
-    保存群互联，保存某分类及其分类下的数组到JSON文件
+    保存群互联，保存某分类及其分类下的数组到JSON文件，保持其他分类数据不变
     """
     try:
+        # 读取现有数据
+        existing_data = {}
+        if os.path.exists(os.path.join(DATA_DIR, f"group_link_data.json")):
+            with open(
+                os.path.join(DATA_DIR, f"group_link_data.json"), "r", encoding="utf-8"
+            ) as f:
+                existing_data = json.load(f)
+
+        # 更新指定分类的数据
+        existing_data[category] = group_links
+
+        # 保存所有数据
         with open(
             os.path.join(DATA_DIR, f"group_link_data.json"), "w", encoding="utf-8"
         ) as f:
-            json.dump({category: group_links}, f, ensure_ascii=False)
-            return True
+            json.dump(existing_data, f, ensure_ascii=False, indent=2)
+        return True
     except Exception as e:
         logging.error(f"保存群互联失败: {e}")
         return False
