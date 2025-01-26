@@ -217,16 +217,9 @@ async def send_group_link_message(websocket, user_id, group_id, raw_message):
                     if link_group_id != group_id:
                         # 目标群是否开启群互联
                         if load_function_status(link_group_id):
+                            # 如果消息是JSON卡片，则不转发
                             if "CQ:json,data=" in raw_message:
-                                await send_group_msg(
-                                    websocket,
-                                    link_group_id,
-                                    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n群【{group_id}】的【{user_id}】发了下面JSON卡片",
-                                )
-                                await asyncio.sleep(0.5)
-                                await send_group_msg(
-                                    websocket, link_group_id, raw_message
-                                )
+                                return
                             else:
                                 message = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n群【{group_id}】的【{user_id}】说：\n\n{raw_message}"
                                 await send_group_msg(websocket, link_group_id, message)
