@@ -232,6 +232,11 @@ async def send_group_link_message(websocket, user_id, group_id, raw_message):
                             # 如果消息是JSON卡片，则不转发
                             if "CQ:json,data=" in raw_message:
                                 return
+                            # 如果消息是选课查询或平均分，则不转发
+                            if raw_message.startswith(
+                                "选课查询"
+                            ) or raw_message.startswith("平均分"):
+                                return
                             else:
                                 message = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n群【{group_id}】的【{user_id}】说：\n\n{raw_message}"
                                 await send_group_msg(websocket, link_group_id, message)
