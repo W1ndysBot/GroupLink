@@ -16,6 +16,12 @@ sys.path.append(
 from app.config import *
 from app.api import *
 from app.switch import load_switch, save_switch
+from app.scripts.GroupLink.config import (
+    BLOCKED_MESSAGE_PREFIXES,
+    BLOCKED_MESSAGE_CONTENTS,
+    BLOCKED_COMMANDS,
+    BLOCKED_REGEX_PATTERNS,
+)
 
 
 # 数据存储路径，实际开发时，请将GroupLink替换为具体的数据存放路径
@@ -214,11 +220,45 @@ async def delete_group_link(websocket, group_id, message_id, raw_message, author
         return False
 
 
+def is_message_blocked(message):
+    """
+    检查消息是否应该被屏蔽
+    参数:
+        message: 待检查的消息
+    返回:
+        bool: True表示应该屏蔽，False表示不屏蔽
+    """
+    # 检查命令
+    if message in BLOCKED_COMMANDS:
+        return True
+
+    # 检查消息前缀
+    for prefix in BLOCKED_MESSAGE_PREFIXES:
+        if message.startswith(prefix):
+            return True
+
+    # 检查消息内容
+    for content in BLOCKED_MESSAGE_CONTENTS:
+        if content in message:
+            return True
+
+    # 检查正则表达式匹配
+    for pattern in BLOCKED_REGEX_PATTERNS:
+        if re.search(pattern, message):
+            return True
+
+    return False
+
+
 async def send_group_link_message(websocket, user_id, group_id, raw_message):
     """
     把某群的消息转发到互联群
     """
     try:
+        # 检查消息是否应该被屏蔽
+        if is_message_blocked(raw_message):
+            return
+
         # 获取该群的互联群
         group_link_category = load_group_link_category(group_id)
         if group_link_category:
@@ -229,17 +269,8 @@ async def send_group_link_message(websocket, user_id, group_id, raw_message):
                     if link_group_id != group_id:
                         # 目标群是否开启群互联
                         if load_function_status(link_group_id):
-                            # 如果消息是JSON卡片，则不转发
-                            if "CQ:json,data=" in raw_message:
-                                return
-                            # 如果消息是选课查询或平均分，则不转发
-                            if raw_message.startswith(
-                                "选课查询"
-                            ) or raw_message.startswith("平均分"):
-                                return
-                            else:
-                                message = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n群【{group_id}】的【{user_id}】说：\n\n{raw_message}"
-                                await send_group_msg(websocket, link_group_id, message)
+                            message = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n群【{group_id}】的【{user_id}】说：\n\n{raw_message}"
+                            await send_group_msg(websocket, link_group_id, message)
 
     except Exception as e:
         logging.error(f"发送群互联消息失败: {e}")
