@@ -1,10 +1,7 @@
 # 群互联消息屏蔽配置
 
 # 不转发的消息前缀列表
-BLOCKED_MESSAGE_PREFIXES = [
-    "选课查询",
-    "平均分",
-]
+BLOCKED_MESSAGE_PREFIXES = ["选课查询", "平均分", "1", "查空教室"]
 
 # 不转发的消息内容列表（支持部分匹配）
 BLOCKED_MESSAGE_CONTENTS = [
